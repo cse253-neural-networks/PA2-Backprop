@@ -140,7 +140,7 @@ class Layer():
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
     self.x = x
-    self.a = x.dot(self.w) + b
+    self.a = x.dot(self.w) + self.b
     return self.a
   
   def backward_pass(self, delta):
@@ -148,6 +148,9 @@ class Layer():
     Write the code for backward pass. This takes in gradient from its next layer as input,
     computes gradient for its weights and the delta to pass to its previous layers.
     """
+    self.d_w = config['learning_rate']*(self.a).T.dot(delta)
+    self.d_b = config['learning_rate']*delta
+    self.d_x = self.w + self.d_w
     return self.d_x
 
 # for all the layers, calculate the loss and predictions      
@@ -162,18 +165,20 @@ class Neuralnetwork():
       if i < len(config['layer_specs']) - 2:
         self.layers.append(Activation(config['activation']))  
     
+    
   def forward_pass(self, x, targets=None):
     """
     Write the code for forward pass through all layers of the model and return loss and predictions.
     If targets == None, loss should be None. If not, then return the loss computed.
     """
     self.x = x
-    
-    if targets != None:
-        loss = self.loss_func(logits, targets)
-    else:
-        loss = None
-    
+    self.y = softmax(x)
+    input = x
+    for layer in self.layers:
+      input = layer.forward_pass(input)
+      
+    loss = self.loss_func(self.y, targets)
+
     return loss, self.y
 
   def loss_func(self, logits, targets):
@@ -186,7 +191,7 @@ class Neuralnetwork():
     epsilon=1e-12
     predictions = np.clip(logits, epsilon, 1. - epsilon)
     N = predictions.shape[0]
-    output = -np.sum(targets*np.log(predictions+1e-9))/N
+    output = -np.sum(targets.T.dot(np.log(predictions+1e-9)))/N
     return output
     
   def backward_pass(self):
@@ -194,6 +199,11 @@ class Neuralnetwork():
     implement the backward pass for the whole network. 
     hint - use previously built functions.
     '''
+    delta = self.targets - self.y
+    for i in range(len(self.layers) - 1, -1, -1):
+      layer = self.layers[i]
+      delta = layer.backward_pass(delta)
+    return delta
       
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
@@ -202,9 +212,8 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
   such as L2 penalty, number of epochs, momentum, etc.
   """
   # initialize network
-  z_train = model.forward_pass(X_train, y_train)
-  model.y = z_train
-  delta = None # calculate delta here
+  loss, model.y = model.forward_pass(X_train, y_train)
+  delta = model.backward_pass()
   grad = model.backward_pass(delta)
   
   
