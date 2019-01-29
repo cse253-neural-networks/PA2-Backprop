@@ -18,6 +18,7 @@ def softmax(x):
   """
   Write the code for softmax activation function that takes in a numpy array and returns a numpy array.
   """
+  output = np.exp(x)/np.sum(np.exp(x))
   return output
 
 
@@ -26,6 +27,15 @@ def load_data(fname):
   Write code to read the data and return it as 2 numpy arrays.
   Make sure to convert labels to one hot encoded format.
   """
+  images = []
+  labels = []
+  while open(fname,'rb') as d:
+    label_onehot = np.zeros(10)
+    datum = pickle.load(d)
+    images.append([datum[:-1]])
+    label_onehot[datum[-1]] = 1
+    labels.append(label_onehot)
+  images = np.array(images)
   return images, labels
 
 
@@ -61,6 +71,7 @@ class Activation:
     Write the code for sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
+    output = 1.0/(1.0+np.exp(-self.x))
     return output
 
   def tanh(self, x):
@@ -68,6 +79,7 @@ class Activation:
     Write the code for tanh activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
+    output = np.tanh(self.x)
     return output
 
   def ReLU(self, x):
@@ -75,24 +87,28 @@ class Activation:
     Write the code for ReLU activation function that takes in a numpy array and returns a numpy array.
     """
     self.x = x
+    output = np.maximum(0,self.x)
     return output
 
   def grad_sigmoid(self):
     """
     Write the code for gradient through sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = np.divide(np.exp(-self.x),np.square(1.0+np.exp(-self.x)))
     return grad
 
   def grad_tanh(self):
     """
     Write the code for gradient through tanh activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = 1.0-np.square(np.tanh(self.x))
     return grad
 
   def grad_ReLU(self):
     """
     Write the code for gradient through ReLU activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = 1.0*(x>0)
     return grad
 
 
@@ -112,6 +128,7 @@ class Layer():
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
     self.x = x
+    self.a = np.dot(self.w,self.x)+self.b
     return self.a
   
   def backward_pass(self, delta):
@@ -119,6 +136,9 @@ class Layer():
     Write the code for backward pass. This takes in gradient from its next layer as input,
     computes gradient for its weights and the delta to pass to its previous layers.
     """
+    self.d_w = -self.w*delta
+    self.d_b = -self.b,delta
+    self.d_x = np.sum(self.d_w,axis=1)+np.sum(self.db)
     return self.d_x
 
       
@@ -139,12 +159,19 @@ class Neuralnetwork():
     If targets == None, loss should be None. If not, then return the loss computed.
     """
     self.x = x
+    self.y = np.copy(x)
+    for l in layers:
+        self.y = layers.forward_pass(self.y)
+    loss = self.loss_func(self.y,self.targets)
     return loss, self.y
 
   def loss_func(self, logits, targets):
     '''
     find cross entropy loss between logits and targets
     '''
+    output = None
+    if target:
+        output = np.sum(-targets*np.log(logits))
     return output
     
   def backward_pass(self):
@@ -152,6 +179,10 @@ class Neuralnetwork():
     implement the backward pass for the whole network. 
     hint - use previously built functions.
     '''
+    delta = self.targets-self.y
+    for l in layers[::-1]:
+         delta = l.backward_pass(delta)
+    
       
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
