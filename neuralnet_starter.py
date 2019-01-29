@@ -83,22 +83,22 @@ class Activation:
     """
     Write the code for sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = 1 / (1 + np.exp(-x))
-    return self.x
+    self.x = x
+    return 1 / (1 + np.exp(-x))
 
   def tanh(self, x):
     """
     Write the code for tanh activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = np.tanh(x)
-    return self.x
+    self.x = x
+    return np.tanh(x)
 
   def ReLU(self, x):
     """
     Write the code for ReLU activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = np.maximum(np.zeros(np.size(x)), x) # Element-wise maximum of array elements
-    return self.x
+    self.x = x
+    return np.maximum(np.zeros(np.size(x)), x) # Element-wise maximum of array elements
 
   def grad_sigmoid(self):
     """
@@ -140,6 +140,7 @@ class Layer():
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
     self.x = x
+    self.a = x.dot(self.w) + b
     return self.a
   
   def backward_pass(self, delta):
@@ -149,7 +150,7 @@ class Layer():
     """
     return self.d_x
 
-      
+# for all the layers, calculate the loss and predictions      
 class Neuralnetwork():
   def __init__(self, config):
     self.layers = []
@@ -178,8 +179,14 @@ class Neuralnetwork():
   def loss_func(self, logits, targets):
     '''
     find cross entropy loss between logits and targets
+    Input: predictions (N, k) ndarray
+           targets (N, k) ndarray        
+    Returns: scalar
     '''
-    
+    epsilon=1e-12
+    predictions = np.clip(logits, epsilon, 1. - epsilon)
+    N = predictions.shape[0]
+    output = -np.sum(targets*np.log(predictions+1e-9))/N
     return output
     
   def backward_pass(self):
@@ -195,14 +202,17 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
   such as L2 penalty, number of epochs, momentum, etc.
   """
   # initialize network
-  model.x = X_train
-  model.targets = y_train
+  z_train = model.forward_pass(X_train, y_train)
+  model.y = z_train
+  delta = None # calculate delta here
+  grad = model.backward_pass(delta)
   
   
 def test(model, X_test, y_test, config):
   """
   Write code to run the model on the data passed as input and return accuracy.
   """
+  
   return accuracy
       
 
