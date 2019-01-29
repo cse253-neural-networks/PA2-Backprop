@@ -166,14 +166,20 @@ class Neuralnetwork():
     Write the code for forward pass through all layers of the model and return loss and predictions.
     If targets == None, loss should be None. If not, then return the loss computed.
     """
-    
     self.x = x
+    
+    if targets != None:
+        loss = self.loss_func(logits, targets)
+    else:
+        loss = None
+    
     return loss, self.y
 
   def loss_func(self, logits, targets):
     '''
     find cross entropy loss between logits and targets
     '''
+    
     return output
     
   def backward_pass(self):
@@ -188,6 +194,9 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
   Write the code to train the network. Use values from config to set parameters
   such as L2 penalty, number of epochs, momentum, etc.
   """
+  # initialize network
+  model.x = X_train
+  model.targets = y_train
   
   
 def test(model, X_test, y_test, config):
