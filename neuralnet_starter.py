@@ -18,6 +18,14 @@ def softmax(x):
   """
   Write the code for softmax activation function that takes in a numpy array and returns a numpy array.
   """
+  
+  hot_max = x.max(axis = 1)
+  nominator = np.exp(x - hot_max.reshape((hot_max.size,1))) # stabilize x
+  nom_max = nominator.sum(axis = 1)
+  denominator = nom_max.reshape((nom_max.size,1))
+  y = nominator/denominator
+  output = y
+  
   return output
 
 
@@ -26,7 +34,22 @@ def load_data(fname):
   Write code to read the data and return it as 2 numpy arrays.
   Make sure to convert labels to one hot encoded format.
   """
-  return images, labels
+  with open('./data/'+fname, 'rb') as f:
+    rawimages = pickle.load(f)
+    
+  images = []
+  labels = []
+
+  for i in range(len(rawimages)):
+    images.append(rawimages[i][0:len(rawimages[i])-1])
+    labels.append(rawimages[i][-1])
+  
+  images = np.array(images)
+  labels = np.array(labels, dtype = int)
+  d = np.zeros((labels.max() + 1, labels.size))
+  d[labels, np.arange(0, labels.size)] = 1
+  
+  return images, d.T
 
 
 class Activation:
@@ -60,39 +83,44 @@ class Activation:
     """
     Write the code for sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = x
-    return output
+    self.x = 1 / (1 + np.exp(-x))
+    return self.x
 
   def tanh(self, x):
     """
     Write the code for tanh activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = x
-    return output
+    self.x = np.tanh(x)
+    return self.x
 
   def ReLU(self, x):
     """
     Write the code for ReLU activation function that takes in a numpy array and returns a numpy array.
     """
-    self.x = x
-    return output
+    self.x = np.maximum(np.zeros(np.size(x)), x) # Element-wise maximum of array elements
+    return self.x
 
   def grad_sigmoid(self):
     """
     Write the code for gradient through sigmoid activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = np.multiply(self.x, 1-self.x)
     return grad
 
   def grad_tanh(self):
     """
     Write the code for gradient through tanh activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = np.one(np.size(self.x)) - self.x**2
     return grad
 
   def grad_ReLU(self):
     """
     Write the code for gradient through ReLU activation function that takes in a numpy array and returns a numpy array.
     """
+    grad = self.x
+    grad[self.x <= 0] = 0  # the derivate of ReLU
+    grad[self.x > 0] = 1  
     return grad
 
 
@@ -138,6 +166,7 @@ class Neuralnetwork():
     Write the code for forward pass through all layers of the model and return loss and predictions.
     If targets == None, loss should be None. If not, then return the loss computed.
     """
+    
     self.x = x
     return loss, self.y
 
